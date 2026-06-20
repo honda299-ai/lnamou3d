@@ -1,16 +1,35 @@
+// ===== استيراد Firebase SDK =====
+import { initializeApp } from "firebase/app";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  serverTimestamp 
+} from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
+
 // ===== إعدادات Firebase =====
 const firebaseConfig = {
   apiKey: "AIzaSyBqcB079jZPCgjt865b4ZSi4dEzrZHerwA",
   authDomain: "lanamu3d.firebaseapp.com",
+  databaseURL: "https://lanamu3d-default-rtdb.firebaseio.com",
   projectId: "lanamu3d",
   storageBucket: "lanamu3d.firebasestorage.app",
   messagingSenderId: "815987598964",
-  appId: "1:815987598964:web:fa6eadefcc4b6e49fc9321"
+  appId: "1:815987598964:web:fa6eadefcc4b6e49fc9321",
+  measurementId: "G-NRPB74RGD0"
 };
 
-// تهيئة Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+// ===== تهيئة Firebase =====
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
 
 // ===== المتغيرات =====
 const COLLECTION_NAME = "memories";
@@ -21,27 +40,27 @@ let editingId = null;
 
 // جلب الذكريات من Firebase في الوقت الفعلي
 function listenToMemories() {
-  db.collection(COLLECTION_NAME)
-    .orderBy("createdAt", "desc")
-    .onSnapshot((snapshot) => {
-      memories = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        memories.push({
-          id: doc.id,
-          title: data.title || "",
-          date: data.date || "",
-          text: data.text || "",
-          edited: data.edited || false,
-          createdAt: data.createdAt || null
-        });
+  const q = query(collection(db, COLLECTION_NAME), orderBy("createdAt", "desc"));
+  
+  onSnapshot(q, (snapshot) => {
+    memories = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      memories.push({
+        id: doc.id,
+        title: data.title || "",
+        date: data.date || "",
+        text: data.text || "",
+        edited: data.edited || false,
+        createdAt: data.createdAt || null
       });
-      renderMemories();
-      updateStatus(`✅ تم تحميل ${memories.length} ذكرى`);
-    }, (error) => {
-      console.error("خطأ في الاستماع:", error);
-      updateStatus("❌ حدث خطأ في تحميل الذكريات");
     });
+    renderMemories();
+    updateStatus(`✅ تم تحميل ${memories.length} ذكرى`);
+  }, (error) => {
+    console.error("خطأ في الاستماع:", error);
+    updateStatus("❌ حدث خطأ في تحميل الذكريات");
+  });
 }
 
 // عرض الذكريات
@@ -78,8 +97,8 @@ function renderMemories() {
         </div>
         <div class="memory-text">${nl2br(escapeHtml(memory.text))}</div>
         <div class="memory-actions">
-          <button class="edit-btn" onclick="editMemory('${memory.id}')">تعديل</button>
-          <button class="delete-btn" onclick="deleteMemory('${memory.id}')">حذف</button>
+          <button class="edit-btn" onclick="window.editMemory('${memory.id}')">تعديل</button>
+          <button class="delete-btn" onclick="window.deleteMemory('${memory.id}')">حذف</button>
         </div>
       </div>
     `;
@@ -107,22 +126,23 @@ async function saveMemory() {
   try {
     if (editingId) {
       // تحديث ذكرى موجودة
-      await db.collection(COLLECTION_NAME).doc(editingId).update({
+      const docRef = doc(db, COLLECTION_NAME, editingId);
+      await updateDoc(docRef, {
         title: title,
         date: date,
         text: text,
         edited: true,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        updatedAt: serverTimestamp()
       });
       updateStatus("✅ تم تحديث الذكرى!");
     } else {
       // إضافة ذكرى جديدة
-      await db.collection(COLLECTION_NAME).add({
+      await addDoc(collection(db, COLLECTION_NAME), {
         title: title,
         date: date,
         text: text,
         edited: false,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        createdAt: serverTimestamp()
       });
       updateStatus("✅ تم حفظ الذكرى!");
     }
@@ -144,7 +164,7 @@ async function deleteMemory(id) {
   updateStatus("⏳ جاري الحذف...");
 
   try {
-    await db.collection(COLLECTION_NAME).doc(id).delete();
+    await deleteDoc(doc(db, COLLECTION_NAME, id));
     updateStatus("✅ تم حذف الذكرى");
     if (editingId === id) {
       clearFields();
@@ -158,7 +178,7 @@ async function deleteMemory(id) {
 }
 
 // تعديل ذكرى
-async function editMemory(id) {
+function editMemory(id) {
   const memory = memories.find(m => m.id === id);
   if (!memory) return;
 
@@ -170,7 +190,7 @@ async function editMemory(id) {
 
   document.querySelector(".form-section").scrollIntoView({ behavior: 'smooth' });
   
-  const saveBtn = document.querySelector('.save-btn');
+  const saveBtn = document.getElementById('saveBtn');
   saveBtn.textContent = 'تحديث الذكرى ✏️';
   setTimeout(() => {
     saveBtn.textContent = 'حفظ الذكرى';
@@ -185,8 +205,9 @@ function clearFields() {
   document.getElementById("date").value = "";
   document.getElementById("text").value = "";
   editingId = null;
-  const saveBtn = document.querySelector('.save-btn');
+  const saveBtn = document.getElementById('saveBtn');
   saveBtn.textContent = 'حفظ الذكرى';
+  updateStatus("");
 }
 
 // ===== دوال مساعدة =====
@@ -213,10 +234,17 @@ function updateStatus(message) {
   }
 }
 
-// ===== بدء التطبيق =====
+// ===== ربط الدوال بالنافذة (للوصول من HTML) =====
+window.saveMemory = saveMemory;
+window.deleteMemory = deleteMemory;
+window.editMemory = editMemory;
+window.clearFields = clearFields;
 
-// التحقق من اتصال Firebase وبدء الاستماع
-console.log("🚀 بدء تشغيل تطبيق دفتر الذكريات...");
+// ===== ربط زر الحفظ =====
+document.getElementById('saveBtn').addEventListener('click', saveMemory);
+
+// ===== بدء التطبيق =====
+console.log("🚀 بدء تشغيل تطبيق دفتر الذكريات (Modular SDK)");
 console.log("📁 مشروع Firebase:", firebaseConfig.projectId);
 
 // بدء الاستماع للذكريات
