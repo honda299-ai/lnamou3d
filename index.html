@@ -25,14 +25,16 @@
         <input type="date" id="date">
 
         <label for="text">تفاصيل الذكرى</label>
-        <textarea id="text" placeholder="اكتبي هنا كل التفاصيل الحلوة... ومتنكديش علينا"></textarea>
+        <textarea id="text" placeholder="اكتبي هنا كل التفاصيل الحلوة..."></textarea>
 
-        <div class="draft-note">الكتابة بتتحفظ تلقائيًا على نفس الجهاز والمتصفح.</div>
+        <div class="draft-note">✨ الذكريات تظهر لكل المستخدمين فوراً</div>
 
         <div class="buttons">
           <button class="save-btn" onclick="saveMemory()">حفظ الذكرى</button>
           <button class="clear-btn" onclick="clearFields()">مسح الكتابة</button>
         </div>
+        
+        <div id="loadingStatus" style="margin-top:10px;font-size:14px;color:#8c6a42;"></div>
       </div>
 
       <div class="memories-section">
@@ -46,6 +48,10 @@
     </div>
   </div>
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
   <script src="main.js"></script>
 </body>
 </html>

@@ -1,10 +1,50 @@
-const MEMORIES_KEY = "our_memories";
-const DRAFT_KEY = "our_memories_draft";
-const EDIT_INDEX_KEY = "our_memories_edit_index";
+// ===== إعدادات Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBqcB079jZPCgjt865b4ZSi4dEzrZHerwA",
+  authDomain: "lanamu3d.firebaseapp.com",
+  projectId: "lanamu3d",
+  storageBucket: "lanamu3d.firebasestorage.app",
+  messagingSenderId: "815987598964",
+  appId: "1:815987598964:web:fa6eadefcc4b6e49fc9321"
+};
 
-let memories = JSON.parse(localStorage.getItem(MEMORIES_KEY)) || [];
-let editingIndex = null;
+// تهيئة Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
+// ===== المتغيرات =====
+const COLLECTION_NAME = "memories";
+let memories = [];
+let editingId = null;
+
+// ===== دوال رئيسية =====
+
+// جلب الذكريات من Firebase في الوقت الفعلي
+function listenToMemories() {
+  db.collection(COLLECTION_NAME)
+    .orderBy("createdAt", "desc")
+    .onSnapshot((snapshot) => {
+      memories = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        memories.push({
+          id: doc.id,
+          title: data.title || "",
+          date: data.date || "",
+          text: data.text || "",
+          edited: data.edited || false,
+          createdAt: data.createdAt || null
+        });
+      });
+      renderMemories();
+      updateStatus(`✅ تم تحميل ${memories.length} ذكرى`);
+    }, (error) => {
+      console.error("خطأ في الاستماع:", error);
+      updateStatus("❌ حدث خطأ في تحميل الذكريات");
+    });
+}
+
+// عرض الذكريات
 function renderMemories() {
   const list = document.getElementById("memoriesList");
   const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
@@ -25,8 +65,7 @@ function renderMemories() {
   }
 
   list.innerHTML = filteredMemories
-    .map((memory, index) => {
-      const realIndex = memories.indexOf(memory);
+    .map((memory) => {
       const isEdited = memory.edited || false;
       const editedClass = isEdited ? 'edited' : '';
       const editedBadge = isEdited ? '<span class="edit-badge">تم التعديل</span>' : '';
@@ -39,8 +78,8 @@ function renderMemories() {
         </div>
         <div class="memory-text">${nl2br(escapeHtml(memory.text))}</div>
         <div class="memory-actions">
-          <button class="edit-btn" onclick="editMemory(${realIndex})">تعديل</button>
-          <button class="delete-btn" onclick="deleteMemory(${realIndex})">حذف</button>
+          <button class="edit-btn" onclick="editMemory('${memory.id}')">تعديل</button>
+          <button class="delete-btn" onclick="deleteMemory('${memory.id}')">حذف</button>
         </div>
       </div>
     `;
@@ -48,7 +87,8 @@ function renderMemories() {
     .join("");
 }
 
-function saveMemory() {
+// حفظ ذكرى جديدة أو تحديثها
+async function saveMemory() {
   const title = document.getElementById("title").value.trim();
   let date = document.getElementById("date").value;
   const text = document.getElementById("text").value.trim();
@@ -62,47 +102,67 @@ function saveMemory() {
     date = new Date().toISOString().split('T')[0];
   }
 
-  const memory = { title, date, text };
+  updateStatus("⏳ جاري الحفظ...");
 
-  if (editingIndex !== null) {
-    memory.edited = true;
-    memories[editingIndex] = memory;
-    editingIndex = null;
-    localStorage.removeItem(EDIT_INDEX_KEY);
-  } else {
-    memory.edited = false;
-    memories.push(memory);
-  }
+  try {
+    if (editingId) {
+      // تحديث ذكرى موجودة
+      await db.collection(COLLECTION_NAME).doc(editingId).update({
+        title: title,
+        date: date,
+        text: text,
+        edited: true,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      updateStatus("✅ تم تحديث الذكرى!");
+    } else {
+      // إضافة ذكرى جديدة
+      await db.collection(COLLECTION_NAME).add({
+        title: title,
+        date: date,
+        text: text,
+        edited: false,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      updateStatus("✅ تم حفظ الذكرى!");
+    }
 
-  localStorage.setItem(MEMORIES_KEY, JSON.stringify(memories));
-
-  clearFields();
-  clearDraft();
-  renderMemories();
-}
-
-function deleteMemory(index) {
-  if (!confirm("متأكد إنك عايزة تحذفي الذكرى دي؟")) return;
-  
-  memories.splice(index, 1);
-  localStorage.setItem(MEMORIES_KEY, JSON.stringify(memories));
-  
-  if (editingIndex === index) {
-    editingIndex = null;
-    localStorage.removeItem(EDIT_INDEX_KEY);
     clearFields();
-    clearDraft();
+    editingId = null;
+    
+  } catch (error) {
+    console.error("خطأ في الحفظ:", error);
+    updateStatus("❌ حدث خطأ في الحفظ");
+    alert("حدث خطأ في حفظ الذكرى. تأكد من اتصال الإنترنت.");
   }
-  
-  renderMemories();
 }
 
-function editMemory(index) {
-  const memory = memories[index];
+// حذف ذكرى
+async function deleteMemory(id) {
+  if (!confirm("متأكد إنك عايزة تحذفي الذكرى دي؟")) return;
+
+  updateStatus("⏳ جاري الحذف...");
+
+  try {
+    await db.collection(COLLECTION_NAME).doc(id).delete();
+    updateStatus("✅ تم حذف الذكرى");
+    if (editingId === id) {
+      clearFields();
+      editingId = null;
+    }
+  } catch (error) {
+    console.error("خطأ في الحذف:", error);
+    updateStatus("❌ حدث خطأ في الحذف");
+    alert("حدث خطأ في حذف الذكرى.");
+  }
+}
+
+// تعديل ذكرى
+async function editMemory(id) {
+  const memory = memories.find(m => m.id === id);
   if (!memory) return;
 
-  editingIndex = index;
-  localStorage.setItem(EDIT_INDEX_KEY, index);
+  editingId = id;
 
   document.getElementById("title").value = memory.title || "";
   document.getElementById("date").value = memory.date || "";
@@ -115,17 +175,21 @@ function editMemory(index) {
   setTimeout(() => {
     saveBtn.textContent = 'حفظ الذكرى';
   }, 3000);
+  
+  updateStatus("✏️ جاري تعديل الذكرى...");
 }
 
+// مسح الحقول
 function clearFields() {
   document.getElementById("title").value = "";
   document.getElementById("date").value = "";
   document.getElementById("text").value = "";
-  editingIndex = null;
-  localStorage.removeItem(EDIT_INDEX_KEY);
+  editingId = null;
   const saveBtn = document.querySelector('.save-btn');
   saveBtn.textContent = 'حفظ الذكرى';
 }
+
+// ===== دوال مساعدة =====
 
 function escapeHtml(text) {
   if (!text) return "";
@@ -142,53 +206,21 @@ function nl2br(text) {
   return text.replace(/\n/g, "<br>");
 }
 
-function saveDraft() {
-  const draft = {
-    title: document.getElementById("title").value,
-    date: document.getElementById("date").value,
-    text: document.getElementById("text").value
-  };
-
-  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-}
-
-function loadDraft() {
-  const draft = JSON.parse(localStorage.getItem(DRAFT_KEY)) || {};
-
-  document.getElementById("title").value = draft.title || "";
-  document.getElementById("date").value = draft.date || "";
-  document.getElementById("text").value = draft.text || "";
-
-  const editIndex = localStorage.getItem(EDIT_INDEX_KEY);
-  if (editIndex !== null) {
-    editingIndex = parseInt(editIndex);
-    if (editingIndex >= 0 && editingIndex < memories.length) {
-      const memory = memories[editingIndex];
-      document.getElementById("title").value = memory.title || "";
-      document.getElementById("date").value = memory.date || "";
-      document.getElementById("text").value = memory.text || "";
-    }
+function updateStatus(message) {
+  const statusEl = document.getElementById("loadingStatus");
+  if (statusEl) {
+    statusEl.textContent = message;
   }
 }
 
-function clearDraft() {
-  localStorage.removeItem(DRAFT_KEY);
-}
+// ===== بدء التطبيق =====
 
-function attachAutoSave() {
-  document.getElementById("title").addEventListener("input", saveDraft);
-  document.getElementById("date").addEventListener("input", saveDraft);
-  document.getElementById("text").addEventListener("input", saveDraft);
-}
+// التحقق من اتصال Firebase وبدء الاستماع
+console.log("🚀 بدء تشغيل تطبيق دفتر الذكريات...");
+console.log("📁 مشروع Firebase:", firebaseConfig.projectId);
 
-function runTests() {
-  console.assert(escapeHtml("&<>\"'") === "&amp;&lt;&gt;&quot;&#039;", "escapeHtml failed");
-  console.assert(nl2br("a\nb") === "a<br>b", "nl2br failed");
-  console.assert(Array.isArray(JSON.parse(localStorage.getItem(MEMORIES_KEY)) || []), "memories should be array");
-  console.log("✅ All tests passed!");
-}
+// بدء الاستماع للذكريات
+listenToMemories();
 
-loadDraft();
-attachAutoSave();
-renderMemories();
-runTests();
+// عرض رسالة ترحيب
+updateStatus("🔄 جاري تحميل الذكريات...");
