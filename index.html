@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>دفتر ذكرياتنا</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="book">
+    <div class="header">
+      <h1>دفتر ذكرياتنا 💛</h1>
+      <p>كل ذكرى حلوة بينا ليها مكان هنا</p>
+    </div>
+
+    <div class="content">
+      <div class="form-section">
+        <div class="section-title">اكتبي ذكرى جديدة</div>
+
+        <label for="title">عنوان الذكرى</label>
+        <input type="text" id="title" placeholder="مثلاً: اول يوم عرفنا بعض">
+
+        <label for="date">التاريخ</label>
+        <input type="date" id="date">
+
+        <label for="text">تفاصيل الذكرى</label>
+        <textarea id="text" placeholder="اكتبي هنا كل التفاصيل الحلوة... ومتنكديش علينا"></textarea>
+
+        <div class="draft-note">الكتابة بتتحفظ تلقائيًا على نفس الجهاز والمتصفح.</div>
+
+        <div class="buttons">
+          <button class="save-btn" onclick="saveMemory()">حفظ الذكرى</button>
+          <button class="clear-btn" onclick="clearFields()">مسح الكتابة</button>
+        </div>
+      </div>
+
+      <div class="memories-section">
+        <div class="section-title">
+          ذكرياتنا
+          <span class="count" id="memoriesCount">0</span>
+        </div>
+        <input type="text" class="search-box" id="searchInput" placeholder="ابحث في الذكريات..." oninput="renderMemories()">
+        <div id="memoriesList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
