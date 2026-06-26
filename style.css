@@ -100,45 +100,6 @@ textarea {
   resize: vertical;
 }
 
-/* ===== ستايل اختيار الكاتب ===== */
-.author-select {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 5px;
-}
-
-.author-btn {
-  flex: 1;
-  padding: 10px 15px;
-  border: 2px solid #e8c79f;
-  border-radius: 12px;
-  background: #fffdf9;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: 0.3s;
-  color: #5a3410;
-}
-
-.author-btn:hover {
-  transform: translateY(-2px);
-}
-
-.author-btn.active-reem {
-  border-color: #ff6b8a;
-  background: #ffe8ee;
-  color: #c0396b;
-  box-shadow: 0 0 0 3px rgba(255, 107, 138, 0.2);
-}
-
-.author-btn.active-mohand {
-  border-color: #4a90d9;
-  background: #e3eeff;
-  color: #1a5a9a;
-  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
-}
-
-/* ===== ستايل بطاقات الذكريات ===== */
 .buttons {
   display: flex;
   gap: 10px;
@@ -185,19 +146,9 @@ button {
   transition: 0.3s;
 }
 
-/* ألوان مختلفة حسب الكاتب */
-.memory-card.author-reem {
-  border-right-color: #ff6b8a;
-  background: linear-gradient(180deg, #fff8fa, #ffe8ee);
-}
-
-.memory-card.author-mohand {
-  border-right-color: #4a90d9;
-  background: linear-gradient(180deg, #f5f9ff, #e3eeff);
-}
-
 .memory-card.edited {
   border-right-color: #4CAF50;
+  background: linear-gradient(180deg, #f8fff8, #f0faf0);
 }
 
 .memory-card.edited .memory-title::after {
@@ -209,37 +160,16 @@ button {
 .memory-top {
   display: flex;
   justify-content: space-between;
+  gap: 10px;
   align-items: center;
   margin-bottom: 8px;
   flex-wrap: wrap;
-  gap: 8px;
 }
 
 .memory-title {
   font-size: 19px;
+  color: #c76800;
   font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.memory-title .author-badge {
-  font-size: 13px;
-  font-weight: bold;
-  padding: 2px 12px;
-  border-radius: 999px;
-  display: inline-block;
-}
-
-.author-badge.reem {
-  background: #ff6b8a;
-  color: white;
-}
-
-.author-badge.mohand {
-  background: #4a90d9;
-  color: white;
 }
 
 .memory-date {
@@ -328,6 +258,7 @@ button {
   font-size: 11px;
   padding: 2px 10px;
   border-radius: 999px;
+  margin-right: 8px;
 }
 
 @keyframes fadeIn {
@@ -339,44 +270,6 @@ button {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* ===== فلاتر الكاتب ===== */
-.filter-section {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.filter-btn {
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 2px solid #e8c79f;
-  background: transparent;
-  font-size: 13px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.filter-btn:hover {
-  background: #fff1dc;
-}
-
-.filter-btn.active {
-  background: #ff9800;
-  color: white;
-  border-color: #ff9800;
-}
-
-.filter-btn.filter-reem.active {
-  background: #ff6b8a;
-  border-color: #ff6b8a;
-}
-
-.filter-btn.filter-mohand.active {
-  background: #4a90d9;
-  border-color: #4a90d9;
 }
 
 @media (max-width: 850px) {
