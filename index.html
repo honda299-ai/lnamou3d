@@ -24,9 +24,17 @@
         <label for="date">التاريخ</label>
         <input type="date" id="date">
 
+        <label for="author">الكاتب</label>
+        <div class="author-select">
+          <button class="author-btn" id="authorReem" onclick="selectAuthor('ريم')">👩 ريم</button>
+          <button class="author-btn" id="authorMohand" onclick="selectAuthor('مهند')">👨 مهند</button>
+        </div>
+        <input type="hidden" id="author" value="ريم">
+
         <label for="text">تفاصيل الذكرى</label>
         <textarea id="text" placeholder="اكتبي هنا كل التفاصيل الحلوة..."></textarea>
 
+        <div class="draft-note">✨ الذكريات تظهر لكل المستخدمين فوراً</div>
 
         <div class="buttons">
           <button class="save-btn" id="saveBtn">حفظ الذكرى</button>
@@ -47,17 +55,10 @@
     </div>
   </div>
 
-  <!-- Firebase Modular SDK v12 -->
-  <script type="importmap">
-    {
-      "imports": {
-        "firebase/app": "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js",
-        "firebase/analytics": "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js"
-      }
-    }
-  </script>
+  <!-- Firebase SDK (طريقة CDN العادية) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   
-  <script type="module" src="main.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
