@@ -18,10 +18,76 @@ const db = firebase.firestore();
 const COLLECTION_NAME = "memories";
 let memories = [];
 let editingId = null;
+let currentAuthor = "ريم";
+let currentFilter = "all";
 
-// ===== دوال رئيسية =====
+// ===== دوال اختيار الكاتب =====
+function selectAuthor(author) {
+  currentAuthor = author;
+  document.getElementById("author").value = author;
+  
+  const reemBtn = document.getElementById("authorReem");
+  const mohandBtn = document.getElementById("authorMohand");
+  
+  reemBtn.classList.remove("active-reem", "active-mohand");
+  mohandBtn.classList.remove("active-reem", "active-mohand");
+  
+  if (author === "ريم") {
+    reemBtn.classList.add("active-reem");
+  } else {
+    mohandBtn.classList.add("active-mohand");
+  }
+}
 
-// جلب الذكريات من Firebase في الوقت الفعلي
+// ===== دوال الفلتر =====
+function setFilter(filter) {
+  currentFilter = filter;
+  renderMemories();
+  
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  if (filter === 'all') {
+    document.getElementById('filterAll').classList.add('active');
+  } else if (filter === 'reem') {
+    document.getElementById('filterReem').classList.add('active');
+  } else if (filter === 'mohand') {
+    document.getElementById('filterMohand').classList.add('active');
+  }
+}
+
+// ===== تنسيق الوقت =====
+function formatTime(timestamp) {
+  if (!timestamp) return "";
+  try {
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleString('ar-EG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (e) {
+    return "";
+  }
+}
+
+function formatTimeShort(timestamp) {
+  if (!timestamp) return "";
+  try {
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleString('ar-EG', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (e) {
+    return "";
+  }
+}
+
+// ===== جلب الذكريات =====
 function listenToMemories() {
   db.collection(COLLECTION_NAME)
     .orderBy("createdAt", "desc")
@@ -34,29 +100,39 @@ function listenToMemories() {
           title: data.title || "",
           date: data.date || "",
           text: data.text || "",
+          author: data.author || "ريم",
           edited: data.edited || false,
-          createdAt: data.createdAt || null
+          createdAt: data.createdAt || null,
+          updatedAt: data.updatedAt || null
         });
       });
       renderMemories();
       updateStatus(`✅ تم تحميل ${memories.length} ذكرى`);
     }, (error) => {
-      console.error("خطأ في الاستماع:", error);
+      console.error("❌ خطأ في الاستماع:", error);
       updateStatus("❌ حدث خطأ في تحميل الذكريات");
-      // عرض رسالة الخطأ للمستخدم
       document.getElementById("memoriesList").innerHTML = 
-        '<div class="empty">❌ حدث خطأ في الاتصال بقاعدة البيانات.<br>تأكد من إعدادات Firebase وقواعد الأمان.</div>';
+        '<div class="empty">❌ حدث خطأ في الاتصال بقاعدة البيانات.<br>تأكد من اتصال الإنترنت.</div>';
     });
 }
 
-// عرض الذكريات
+// ===== عرض الذكريات =====
 function renderMemories() {
   const list = document.getElementById("memoriesList");
   const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
 
   let filteredMemories = memories;
+  
+  // فلتر حسب الكاتب
+  if (currentFilter === 'reem') {
+    filteredMemories = filteredMemories.filter(m => m.author === 'ريم');
+  } else if (currentFilter === 'mohand') {
+    filteredMemories = filteredMemories.filter(m => m.author === 'مهند');
+  }
+  
+  // فلتر حسب البحث
   if (searchTerm) {
-    filteredMemories = memories.filter(m => 
+    filteredMemories = filteredMemories.filter(m => 
       m.title.toLowerCase().includes(searchTerm) || 
       m.text.toLowerCase().includes(searchTerm)
     );
@@ -65,26 +141,45 @@ function renderMemories() {
   document.getElementById("memoriesCount").textContent = memories.length;
 
   if (filteredMemories.length === 0) {
-    list.innerHTML = '<div class="empty">مفيش ذكريات مكتوبة لسه... ابدأ بأول ذكرى جميلة 💛</div>';
+    if (memories.length === 0) {
+      list.innerHTML = '<div class="empty">💛 مفيش ذكريات مكتوبة لسه...<br> ابدأ بأول ذكرى جميلة 🥰</div>';
+    } else {
+      list.innerHTML = '<div class="empty">🔍 مفيش نتائج تطابق بحثك</div>';
+    }
     return;
   }
 
   list.innerHTML = filteredMemories
     .map((memory) => {
-      const isEdited = memory.edited || false;
-      const editedClass = isEdited ? 'edited' : '';
-      const editedBadge = isEdited ? '<span class="edit-badge">تم التعديل</span>' : '';
+      const authorClass = memory.author === 'ريم' ? 'author-reem' : 'author-mohand';
+      const authorBadge = memory.author === 'ريم' ? 'reem' : 'mohand';
+      const authorEmoji = memory.author === 'ريم' ? '👩' : '👨';
+      
+      const createdTime = formatTime(memory.createdAt);
+      const createdTimeShort = formatTimeShort(memory.createdAt);
+      
+      let editInfo = '';
+      if (memory.edited && memory.updatedAt) {
+        const updatedTime = formatTime(memory.updatedAt);
+        editInfo = `<span class="memory-edit-info">تم التعديل ${updatedTime}</span>`;
+      }
       
       return `
-      <div class="memory-card ${editedClass}">
+      <div class="memory-card ${authorClass} ${memory.edited ? 'edited' : ''}">
         <div class="memory-top">
-          <div class="memory-title">${escapeHtml(memory.title)} ${editedBadge}</div>
-          <div class="memory-date">${escapeHtml(memory.date || "بدون تاريخ")}</div>
+          <div class="memory-title">
+            ${escapeHtml(memory.title)}
+            <span class="author-badge ${authorBadge}">${authorEmoji} ${escapeHtml(memory.author)}</span>
+          </div>
+          <div class="memory-meta">
+            <span class="memory-date">📅 ${escapeHtml(memory.date || "بدون تاريخ")}</span>
+            <span class="memory-time">🕐 ${createdTimeShort}</span>
+            ${editInfo}
+          </div>
         </div>
         <div class="memory-text">${nl2br(escapeHtml(memory.text))}</div>
         <div class="memory-actions">
-          <button class="edit-btn" onclick="editMemory('${memory.id}')">تعديل</button>
-          <button class="delete-btn" onclick="deleteMemory('${memory.id}')">حذف</button>
+          <button class="edit-btn" onclick="editMemory('${memory.id}')">✏️ تعديل</button>
         </div>
       </div>
     `;
@@ -92,14 +187,15 @@ function renderMemories() {
     .join("");
 }
 
-// حفظ ذكرى جديدة أو تحديثها
+// ===== حفظ ذكرى =====
 async function saveMemory() {
   const title = document.getElementById("title").value.trim();
   let date = document.getElementById("date").value;
   const text = document.getElementById("text").value.trim();
+  const author = document.getElementById("author").value;
 
   if (!title || !text) {
-    alert("اكتبي عنوان الذكرى والتفاصيل الأول 💛");
+    alert("⚠️ اكتبي عنوان الذكرى والتفاصيل الأول 💛");
     return;
   }
 
@@ -116,6 +212,7 @@ async function saveMemory() {
         title: title,
         date: date,
         text: text,
+        author: author,
         edited: true,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -126,6 +223,7 @@ async function saveMemory() {
         title: title,
         date: date,
         text: text,
+        author: author,
         edited: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -136,33 +234,13 @@ async function saveMemory() {
     editingId = null;
     
   } catch (error) {
-    console.error("خطأ في الحفظ:", error);
+    console.error("❌ خطأ في الحفظ:", error);
     updateStatus("❌ حدث خطأ في الحفظ");
-    alert("حدث خطأ في حفظ الذكرى: " + error.message);
+    alert("❌ حدث خطأ في حفظ الذكرى: " + error.message);
   }
 }
 
-// حذف ذكرى
-async function deleteMemory(id) {
-  if (!confirm("متأكد إنك عايزة تحذفي الذكرى دي؟")) return;
-
-  updateStatus("⏳ جاري الحذف...");
-
-  try {
-    await db.collection(COLLECTION_NAME).doc(id).delete();
-    updateStatus("✅ تم حذف الذكرى");
-    if (editingId === id) {
-      clearFields();
-      editingId = null;
-    }
-  } catch (error) {
-    console.error("خطأ في الحذف:", error);
-    updateStatus("❌ حدث خطأ في الحذف");
-    alert("حدث خطأ في حذف الذكرى: " + error.message);
-  }
-}
-
-// تعديل ذكرى
+// ===== تعديل ذكرى =====
 function editMemory(id) {
   const memory = memories.find(m => m.id === id);
   if (!memory) return;
@@ -172,31 +250,42 @@ function editMemory(id) {
   document.getElementById("title").value = memory.title || "";
   document.getElementById("date").value = memory.date || "";
   document.getElementById("text").value = memory.text || "";
+  
+  selectAuthor(memory.author || "ريم");
 
-  document.querySelector(".form-section").scrollIntoView({ behavior: 'smooth' });
+  document.querySelector(".form-section").scrollIntoView({ 
+    behavior: 'smooth',
+    block: 'center'
+  });
   
   const saveBtn = document.getElementById('saveBtn');
-  saveBtn.textContent = 'تحديث الذكرى ✏️';
+  saveBtn.textContent = '🔄 تحديث الذكرى';
+  saveBtn.style.background = '#4CAF50';
+  
   setTimeout(() => {
-    saveBtn.textContent = 'حفظ الذكرى';
-  }, 3000);
+    saveBtn.textContent = '💾 حفظ الذكرى';
+    saveBtn.style.background = '#ff9800';
+  }, 5000);
   
   updateStatus("✏️ جاري تعديل الذكرى...");
 }
 
-// مسح الحقول
+// ===== مسح الحقول =====
 function clearFields() {
   document.getElementById("title").value = "";
   document.getElementById("date").value = "";
   document.getElementById("text").value = "";
   editingId = null;
+  
   const saveBtn = document.getElementById('saveBtn');
-  saveBtn.textContent = 'حفظ الذكرى';
+  saveBtn.textContent = '💾 حفظ الذكرى';
+  saveBtn.style.background = '#ff9800';
+  
   updateStatus("");
+  selectAuthor("ريم");
 }
 
 // ===== دوال مساعدة =====
-
 function escapeHtml(text) {
   if (!text) return "";
   return String(text)
@@ -219,17 +308,22 @@ function updateStatus(message) {
   }
 }
 
-// ===== ربط زر الحفظ =====
+// ===== ربط الأحداث =====
 document.addEventListener('DOMContentLoaded', function() {
+  // ربط زر الحفظ
   document.getElementById('saveBtn').addEventListener('click', saveMemory);
+  
+  // تعيين الكاتب الافتراضي
+  selectAuthor("ريم");
+  
+  // تفعيل فلتر الكل افتراضياً
+  setFilter('all');
+  
+  console.log("✅ تم تحميل التطبيق بنجاح!");
+  console.log("📁 مشروع Firebase:", firebaseConfig.projectId);
 });
 
 // ===== بدء التطبيق =====
-console.log("🚀 بدء تشغيل تطبيق دفتر الذكريات");
-console.log("📁 مشروع Firebase:", firebaseConfig.projectId);
-
-// بدء الاستماع للذكريات
+console.log("🚀 بدء تشغيل تطبيق دفتر الذكريات...");
 listenToMemories();
-
-// عرض رسالة ترحيب
 updateStatus("🔄 جاري تحميل الذكريات...");

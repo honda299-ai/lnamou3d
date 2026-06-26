@@ -100,6 +100,46 @@ textarea {
   resize: vertical;
 }
 
+/* ===== ستايل اختيار الكاتب ===== */
+.author-select {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.author-btn {
+  flex: 1;
+  padding: 10px 15px;
+  border: 2px solid #e8c79f;
+  border-radius: 12px;
+  background: #fffdf9;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: 0.3s;
+  color: #5a3410;
+}
+
+.author-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.author-btn.active-reem {
+  border-color: #ff6b8a;
+  background: #ffe8ee;
+  color: #c0396b;
+  box-shadow: 0 0 0 3px rgba(255, 107, 138, 0.2);
+}
+
+.author-btn.active-mohand {
+  border-color: #4a90d9;
+  background: #e3eeff;
+  color: #1a5a9a;
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
+}
+
+/* ===== ستايل بطاقات الذكريات ===== */
 .buttons {
   display: flex;
   gap: 10px;
@@ -119,11 +159,12 @@ button {
 .save-btn {
   background: #ff9800;
   color: white;
+  font-weight: bold;
 }
 
 .save-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(255, 152, 0, 0.25);
+  box-shadow: 0 8px 18px rgba(255, 152, 0, 0.3);
 }
 
 .clear-btn {
@@ -146,38 +187,99 @@ button {
   transition: 0.3s;
 }
 
-.memory-card.edited {
-  border-right-color: #4CAF50;
-  background: linear-gradient(180deg, #f8fff8, #f0faf0);
+/* ألوان مختلفة حسب الكاتب */
+.memory-card.author-reem {
+  border-right-color: #ff6b8a;
+  background: linear-gradient(180deg, #fff8fa, #ffe8ee);
 }
 
-.memory-card.edited .memory-title::after {
-  content: " ✏️";
-  font-size: 14px;
-  color: #4CAF50;
+.memory-card.author-mohand {
+  border-right-color: #4a90d9;
+  background: linear-gradient(180deg, #f5f9ff, #e3eeff);
+}
+
+.memory-card.edited {
+  border-right-color: #4CAF50;
 }
 
 .memory-top {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 8px;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
 .memory-title {
   font-size: 19px;
-  color: #c76800;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.memory-title .author-badge {
+  font-size: 13px;
+  font-weight: bold;
+  padding: 2px 12px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.author-badge.reem {
+  background: #ff6b8a;
+  color: white;
+}
+
+.author-badge.mohand {
+  background: #4a90d9;
+  color: white;
+}
+
+.memory-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .memory-date {
-  font-size: 14px;
+  font-size: 13px;
   color: #8c6a42;
   background: #fff1dc;
-  padding: 6px 10px;
+  padding: 4px 10px;
   border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.memory-time {
+  font-size: 12px;
+  color: #8c6a42;
+  background: #f5f0ea;
+  padding: 4px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.memory-edit-info {
+  font-size: 12px;
+  color: #4CAF50;
+  background: #e8f5e9;
+  padding: 3px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.memory-edit-info::before {
+  content: "✏️";
 }
 
 .memory-text {
@@ -195,26 +297,19 @@ button {
   flex-wrap: wrap;
 }
 
-.delete-btn {
-  background: #fff0ec;
-  color: #c24d2c;
-  padding: 9px 14px;
-  font-size: 14px;
-}
-
-.delete-btn:hover {
-  background: #ffd8d0;
-}
-
 .edit-btn {
   background: #ecf7f0;
   color: #1a7a4a;
-  padding: 9px 14px;
+  padding: 8px 16px;
   font-size: 14px;
+  border-radius: 10px;
+  font-weight: bold;
 }
 
 .edit-btn:hover {
   background: #d4efe0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
 .empty {
@@ -232,6 +327,7 @@ button {
   border: 1px solid #f0d9b8;
   padding: 10px 12px;
   border-radius: 10px;
+  text-align: center;
 }
 
 .search-box {
@@ -251,14 +347,44 @@ button {
   box-shadow: 0 0 0 3px rgba(255, 157, 47, 0.1);
 }
 
-.edit-badge {
-  display: inline-block;
-  background: #4CAF50;
-  color: white;
-  font-size: 11px;
-  padding: 2px 10px;
+/* ===== فلاتر الكاتب ===== */
+.filter-section {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 6px 14px;
   border-radius: 999px;
-  margin-right: 8px;
+  border: 2px solid #e8c79f;
+  background: transparent;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.3s;
+  font-weight: bold;
+}
+
+.filter-btn:hover {
+  background: #fff1dc;
+  transform: translateY(-2px);
+}
+
+.filter-btn.active {
+  background: #ff9800;
+  color: white;
+  border-color: #ff9800;
+}
+
+.filter-btn.filter-reem.active {
+  background: #ff6b8a;
+  border-color: #ff6b8a;
+}
+
+.filter-btn.filter-mohand.active {
+  background: #4a90d9;
+  border-color: #4a90d9;
 }
 
 @keyframes fadeIn {
@@ -272,6 +398,7 @@ button {
   }
 }
 
+/* ===== تحسينات للشاشات الصغيرة ===== */
 @media (max-width: 850px) {
   .content {
     grid-template-columns: 1fr;
@@ -279,5 +406,33 @@ button {
 
   .header h1 {
     font-size: 30px;
+  }
+  
+  .memory-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .memory-meta {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 500px) {
+  body {
+    padding: 15px 10px;
+  }
+  
+  .form-section,
+  .memories-section {
+    padding: 15px;
+  }
+  
+  .author-select {
+    flex-direction: column;
+  }
+  
+  .memory-title {
+    font-size: 17px;
   }
 }

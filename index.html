@@ -10,54 +10,65 @@
 
   <div class="book">
     <div class="header">
-      <h1>دفتر ذكرياتنا 💛</h1>
+      <h1>📖 دفتر ذكرياتنا 💛</h1>
       <p>كل ذكرى حلوة بينا ليها مكان هنا</p>
     </div>
 
     <div class="content">
+      <!-- قسم الإضافة -->
       <div class="form-section">
-        <div class="section-title">اكتبي ذكرى جديدة</div>
+        <div class="section-title">✍️ اكتبي ذكرى جديدة</div>
 
-        <label for="title">عنوان الذكرى</label>
+        <label for="title">📌 عنوان الذكرى</label>
         <input type="text" id="title" placeholder="مثلاً: اول يوم عرفنا بعض">
 
-        <label for="date">التاريخ</label>
+        <label for="date">📅 التاريخ</label>
         <input type="date" id="date">
 
-        <label for="text">تفاصيل الذكرى</label>
+        <label for="author">👤 الكاتب</label>
+        <div class="author-select">
+          <button class="author-btn" id="authorReem" onclick="selectAuthor('ريم')">👩 ريم</button>
+          <button class="author-btn" id="authorMohand" onclick="selectAuthor('مهند')">👨 مهند</button>
+        </div>
+        <input type="hidden" id="author" value="ريم">
+
+        <label for="text">💭 تفاصيل الذكرى</label>
         <textarea id="text" placeholder="اكتبي هنا كل التفاصيل الحلوة..."></textarea>
 
+        <div class="draft-note">✨ الذكريات تظهر لكل المستخدمين فوراً</div>
 
         <div class="buttons">
-          <button class="save-btn" id="saveBtn">حفظ الذكرى</button>
-          <button class="clear-btn" onclick="clearFields()">مسح الكتابة</button>
+          <button class="save-btn" id="saveBtn">💾 حفظ الذكرى</button>
+          <button class="clear-btn" onclick="clearFields()">🗑️ مسح الكتابة</button>
         </div>
         
         <div id="loadingStatus" style="margin-top:10px;font-size:14px;color:#8c6a42;"></div>
       </div>
 
+      <!-- قسم العرض -->
       <div class="memories-section">
         <div class="section-title">
-          ذكرياتنا
+          📚 ذكرياتنا
           <span class="count" id="memoriesCount">0</span>
         </div>
-        <input type="text" class="search-box" id="searchInput" placeholder="ابحث في الذكريات..." oninput="renderMemories()">
+        
+        <!-- فلتر -->
+        <div class="filter-section">
+          <button class="filter-btn active" id="filterAll" onclick="setFilter('all')">📋 الكل</button>
+          <button class="filter-btn filter-reem" id="filterReem" onclick="setFilter('reem')">👩 ريم</button>
+          <button class="filter-btn filter-mohand" id="filterMohand" onclick="setFilter('mohand')">👨 مهند</button>
+        </div>
+        
+        <input type="text" class="search-box" id="searchInput" placeholder="🔍 ابحث في الذكريات..." oninput="renderMemories()">
         <div id="memoriesList"></div>
       </div>
     </div>
   </div>
 
-  <!-- Firebase Modular SDK v12 -->
-  <script type="importmap">
-    {
-      "imports": {
-        "firebase/app": "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js",
-        "firebase/analytics": "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js"
-      }
-    }
-  </script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   
-  <script type="module" src="main.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
