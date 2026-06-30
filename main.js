@@ -17,74 +17,48 @@ const db = firebase.firestore();
 // ===== المتغيرات =====
 const COLLECTION_NAME = "memories";
 let memories = [];
-let editingId = null;
-let currentAuthor = "ريم";
-let currentFilter = "all";
+let currentAuthor = null; // "ريم" أو "مهند"
+const STORAGE_KEY = "our_memories_author";
 
-// ===== دوال اختيار الكاتب =====
-function selectAuthor(author) {
+// ===== واجهة الترحيب =====
+function showWelcomeOverlay() {
+  document.getElementById("welcomeOverlay").classList.remove("hidden");
+}
+
+function hideWelcomeOverlay() {
+  document.getElementById("welcomeOverlay").classList.add("hidden");
+}
+
+function chooseAuthor(author) {
   currentAuthor = author;
-  document.getElementById("author").value = author;
-  
-  const reemBtn = document.getElementById("authorReem");
-  const mohandBtn = document.getElementById("authorMohand");
-  
-  reemBtn.classList.remove("active-reem", "active-mohand");
-  mohandBtn.classList.remove("active-reem", "active-mohand");
-  
-  if (author === "ريم") {
-    reemBtn.classList.add("active-reem");
-  } else {
-    mohandBtn.classList.add("active-mohand");
-  }
-}
-
-// ===== دوال الفلتر =====
-function setFilter(filter) {
-  currentFilter = filter;
+  localStorage.setItem(STORAGE_KEY, author);
+  hideWelcomeOverlay();
+  updateGreeting();
+  // إعادة تحميل الذكريات (لتحديث العرض بدون إعادة تحميل الصفحة)
   renderMemories();
-  
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  
-  if (filter === 'all') {
-    document.getElementById('filterAll').classList.add('active');
-  } else if (filter === 'reem') {
-    document.getElementById('filterReem').classList.add('active');
-  } else if (filter === 'mohand') {
-    document.getElementById('filterMohand').classList.add('active');
+}
+
+function updateGreeting() {
+  const greetingEl = document.getElementById("greeting");
+  if (currentAuthor === "ريم") {
+    greetingEl.textContent = "👩 مرحباً ريم! اكتبي ذكرياتك الجميلة 💛";
+  } else if (currentAuthor === "مهند") {
+    greetingEl.textContent = "👨 مرحباً مهند! اكتبي ذكرياتك الجميلة 💛";
+  } else {
+    greetingEl.textContent = "كل ذكرى حلوة بينا ليها مكان هنا";
   }
 }
 
-// ===== تنسيق الوقت =====
-function formatTime(timestamp) {
-  if (!timestamp) return "";
-  try {
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleString('ar-EG', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  } catch (e) {
-    return "";
+// التحقق من وجود اختيار سابق
+function loadAuthorPreference() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved === "ريم" || saved === "مهند") {
+    currentAuthor = saved;
+    hideWelcomeOverlay();
+    updateGreeting();
+    return true;
   }
-}
-
-function formatTimeShort(timestamp) {
-  if (!timestamp) return "";
-  try {
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleString('ar-EG', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  } catch (e) {
-    return "";
-  }
+  return false;
 }
 
 // ===== جلب الذكريات =====
@@ -100,19 +74,17 @@ function listenToMemories() {
           title: data.title || "",
           date: data.date || "",
           text: data.text || "",
-          author: data.author || "ريم",
-          edited: data.edited || false,
-          createdAt: data.createdAt || null,
-          updatedAt: data.updatedAt || null
+          author: data.author || "غير معروف",
+          createdAt: data.createdAt || null
         });
       });
       renderMemories();
       updateStatus(`✅ تم تحميل ${memories.length} ذكرى`);
     }, (error) => {
-      console.error("❌ خطأ في الاستماع:", error);
+      console.error("خطأ في الاستماع:", error);
       updateStatus("❌ حدث خطأ في تحميل الذكريات");
-      document.getElementById("memoriesList").innerHTML = 
-        '<div class="empty">❌ حدث خطأ في الاتصال بقاعدة البيانات.<br>تأكد من اتصال الإنترنت.</div>';
+      document.getElementById("memoriesList").innerHTML =
+        '<div class="empty">❌ حدث خطأ في الاتصال بقاعدة البيانات.<br>تأكد من إعدادات Firebase وقواعد الأمان.</div>';
     });
 }
 
@@ -122,18 +94,9 @@ function renderMemories() {
   const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
 
   let filteredMemories = memories;
-  
-  // فلتر حسب الكاتب
-  if (currentFilter === 'reem') {
-    filteredMemories = filteredMemories.filter(m => m.author === 'ريم');
-  } else if (currentFilter === 'mohand') {
-    filteredMemories = filteredMemories.filter(m => m.author === 'مهند');
-  }
-  
-  // فلتر حسب البحث
   if (searchTerm) {
-    filteredMemories = filteredMemories.filter(m => 
-      m.title.toLowerCase().includes(searchTerm) || 
+    filteredMemories = memories.filter(m =>
+      m.title.toLowerCase().includes(searchTerm) ||
       m.text.toLowerCase().includes(searchTerm)
     );
   }
@@ -142,7 +105,7 @@ function renderMemories() {
 
   if (filteredMemories.length === 0) {
     if (memories.length === 0) {
-      list.innerHTML = '<div class="empty">💛 مفيش ذكريات مكتوبة لسه...<br> ابدأ بأول ذكرى جميلة 🥰</div>';
+      list.innerHTML = '<div class="empty">💛 مفيش ذكريات مكتوبة لسه... ابدأ بأول ذكرى جميلة 🥰</div>';
     } else {
       list.innerHTML = '<div class="empty">🔍 مفيش نتائج تطابق بحثك</div>';
     }
@@ -151,48 +114,38 @@ function renderMemories() {
 
   list.innerHTML = filteredMemories
     .map((memory) => {
-      const authorClass = memory.author === 'ريم' ? 'author-reem' : 'author-mohand';
-      const authorBadge = memory.author === 'ريم' ? 'reem' : 'mohand';
-      const authorEmoji = memory.author === 'ريم' ? '👩' : '👨';
-      
-      const createdTime = formatTime(memory.createdAt);
-      const createdTimeShort = formatTimeShort(memory.createdAt);
-      
-      let editInfo = '';
-      if (memory.edited && memory.updatedAt) {
-        const updatedTime = formatTime(memory.updatedAt);
-        editInfo = `<span class="memory-edit-info">تم التعديل ${updatedTime}</span>`;
-      }
-      
+      const author = memory.author || "غير معروف";
+      const authorClass = author === "ريم" ? "author-reem" : "author-mohand";
+      const authorBadge = author === "ريم" ? "reem" : "mohand";
+      const authorEmoji = author === "ريم" ? "👩" : "👨";
+
       return `
-      <div class="memory-card ${authorClass} ${memory.edited ? 'edited' : ''}">
+      <div class="memory-card ${authorClass}">
         <div class="memory-top">
           <div class="memory-title">
             ${escapeHtml(memory.title)}
-            <span class="author-badge ${authorBadge}">${authorEmoji} ${escapeHtml(memory.author)}</span>
+            <span class="author-badge ${authorBadge}">${authorEmoji} ${escapeHtml(author)}</span>
           </div>
-          <div class="memory-meta">
-            <span class="memory-date">📅 ${escapeHtml(memory.date || "بدون تاريخ")}</span>
-            <span class="memory-time">🕐 ${createdTimeShort}</span>
-            ${editInfo}
-          </div>
+          <div class="memory-date">📅 ${escapeHtml(memory.date || "بدون تاريخ")}</div>
         </div>
         <div class="memory-text">${nl2br(escapeHtml(memory.text))}</div>
-        <div class="memory-actions">
-          <button class="edit-btn" onclick="editMemory('${memory.id}')">✏️ تعديل</button>
-        </div>
       </div>
     `;
     })
     .join("");
 }
 
-// ===== حفظ ذكرى =====
+// ===== حفظ ذكرى جديدة =====
 async function saveMemory() {
+  if (!currentAuthor) {
+    alert("⚠️ من فضلك اختاري اسمك أولاً (ريم أو مهند)");
+    showWelcomeOverlay();
+    return;
+  }
+
   const title = document.getElementById("title").value.trim();
   let date = document.getElementById("date").value;
   const text = document.getElementById("text").value.trim();
-  const author = document.getElementById("author").value;
 
   if (!title || !text) {
     alert("⚠️ اكتبي عنوان الذكرى والتفاصيل الأول 💛");
@@ -206,68 +159,20 @@ async function saveMemory() {
   updateStatus("⏳ جاري الحفظ...");
 
   try {
-    if (editingId) {
-      // تحديث ذكرى موجودة
-      await db.collection(COLLECTION_NAME).doc(editingId).update({
-        title: title,
-        date: date,
-        text: text,
-        author: author,
-        edited: true,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      updateStatus("✅ تم تحديث الذكرى!");
-    } else {
-      // إضافة ذكرى جديدة
-      await db.collection(COLLECTION_NAME).add({
-        title: title,
-        date: date,
-        text: text,
-        author: author,
-        edited: false,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      updateStatus("✅ تم حفظ الذكرى!");
-    }
-
+    await db.collection(COLLECTION_NAME).add({
+      title: title,
+      date: date,
+      text: text,
+      author: currentAuthor,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    updateStatus("✅ تم حفظ الذكرى!");
     clearFields();
-    editingId = null;
-    
   } catch (error) {
-    console.error("❌ خطأ في الحفظ:", error);
+    console.error("خطأ في الحفظ:", error);
     updateStatus("❌ حدث خطأ في الحفظ");
     alert("❌ حدث خطأ في حفظ الذكرى: " + error.message);
   }
-}
-
-// ===== تعديل ذكرى =====
-function editMemory(id) {
-  const memory = memories.find(m => m.id === id);
-  if (!memory) return;
-
-  editingId = id;
-
-  document.getElementById("title").value = memory.title || "";
-  document.getElementById("date").value = memory.date || "";
-  document.getElementById("text").value = memory.text || "";
-  
-  selectAuthor(memory.author || "ريم");
-
-  document.querySelector(".form-section").scrollIntoView({ 
-    behavior: 'smooth',
-    block: 'center'
-  });
-  
-  const saveBtn = document.getElementById('saveBtn');
-  saveBtn.textContent = '🔄 تحديث الذكرى';
-  saveBtn.style.background = '#4CAF50';
-  
-  setTimeout(() => {
-    saveBtn.textContent = '💾 حفظ الذكرى';
-    saveBtn.style.background = '#ff9800';
-  }, 5000);
-  
-  updateStatus("✏️ جاري تعديل الذكرى...");
 }
 
 // ===== مسح الحقول =====
@@ -275,14 +180,7 @@ function clearFields() {
   document.getElementById("title").value = "";
   document.getElementById("date").value = "";
   document.getElementById("text").value = "";
-  editingId = null;
-  
-  const saveBtn = document.getElementById('saveBtn');
-  saveBtn.textContent = '💾 حفظ الذكرى';
-  saveBtn.style.background = '#ff9800';
-  
   updateStatus("");
-  selectAuthor("ريم");
 }
 
 // ===== دوال مساعدة =====
@@ -309,21 +207,26 @@ function updateStatus(message) {
 }
 
 // ===== ربط الأحداث =====
-document.addEventListener('DOMContentLoaded', function() {
-  // ربط زر الحفظ
+document.addEventListener('DOMContentLoaded', function () {
+  // 1. محاولة تحميل الاختيار السابق
+  const hasPreference = loadAuthorPreference();
+
+  // 2. إذا لم يكن هناك اختيار سابق، نظهر الـ overlay
+  if (!hasPreference) {
+    showWelcomeOverlay();
+  }
+
+  // 3. ربط زر الحفظ
   document.getElementById('saveBtn').addEventListener('click', saveMemory);
-  
-  // تعيين الكاتب الافتراضي
-  selectAuthor("ريم");
-  
-  // تفعيل فلتر الكل افتراضياً
-  setFilter('all');
-  
-  console.log("✅ تم تحميل التطبيق بنجاح!");
+
+  // 4. بدء الاستماع للذكريات
+  listenToMemories();
+
+  console.log("🚀 بدء تشغيل تطبيق دفتر الذكريات (نسخة بدون تعديل/حذف)");
   console.log("📁 مشروع Firebase:", firebaseConfig.projectId);
 });
 
-// ===== بدء التطبيق =====
-console.log("🚀 بدء تشغيل تطبيق دفتر الذكريات...");
-listenToMemories();
-updateStatus("🔄 جاري تحميل الذكريات...");
+// تعريف الدوال في النطاق العام للاستخدام من HTML
+window.chooseAuthor = chooseAuthor;
+window.clearFields = clearFields;
+window.renderMemories = renderMemories;
